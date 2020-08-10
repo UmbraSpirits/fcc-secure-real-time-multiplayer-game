@@ -47,26 +47,41 @@ const server = app.listen(portNum, () => {
 });
 
 const io = socket(server);
+var players = {};
 
 io.sockets.on("connection", (socket) => {
-  console.log(`Connection ID: ${socket.id}`);
+  console.log(`User with ID ${socket.id} has connected`);
 
-  socket.emit("init", (data) => {
-    if (data.error) {
-      console.log("wrong");
-    }
-    if (data.ok) {
-      console.log("succes");
-    }
+  socket.on("newPlayer", () => {
+    players[socket.id] = {
+      x: 300,
+      y: 300,
+    };
   });
 
-  socket.on("error", (err) => {
-    console.log(err);
+  socket.on("movement", function (data) {
+    var player = players[socket.id] || {};
+    if (data.left) {
+      player.x -= 5;
+    }
+    if (data.up) {
+      player.y -= 5;
+    }
+    if (data.right) {
+      player.x += 5;
+    }
+    if (data.down) {
+      player.y += 5;
+    }
   });
-
   socket.on("disconnect", () => {
-    console.log(`disconnected ID: ${socket.id}`);
+    console.log(`A user with ID: ${socket.id} has disconnected`);
+    delete players[socket.id];
   });
 });
+
+setInterval(function () {
+  io.sockets.emit("gameRunning", players);
+}, 1000 / 60);
 
 module.exports = app; // For testing
